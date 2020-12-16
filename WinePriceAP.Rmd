@@ -1,0 +1,88 @@
+---
+title: "Wine Price Analysis/Predictor"
+author: "Cong Feng"
+date: "12/15/2020"
+output: pdf_document:
+  df_print: kable
+  number_section: yes
+  toc: true
+highlight-style: kate
+mainfont: Calibri-light
+fontsize: 10pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+if(!require(tidyverse)) install.packages("tidyverse")
+if(!require(caret)) install.packages("caret")
+if(!require(ggplot2)) install.packages(ggplot2)
+if(!require(knitr)) install.packages(knitr)
+
+library(tidyverse)
+library(caret)
+library(ggplot2)
+library(knitr)
+```
+# Introduction
+
+In this project we are going to explore the relation between wines, ratings and price. As a wine enthusiast, one of the main factors that I look for when trying new wine is their rating, type of wine and where the wine came from. Today I will be working with a data set that includes all of those factors. 
+
+The data is downloded from https://www.kaggle.com/zynicide/wine-reviews , the user scrapped the data from wineEnthusiast during the week of June 15th 2017. 
+
+The goal I have set for this project is to analyze to see how each of the factors correlates with the price of wine. Then use these predictors to predict the price of each wine. To determine the accuracy of the prediction, we will calculate the "Root Mean Square Error" between the predicted price and actual price.
+
+The formula is defined:
+$$RMSE =\sqrt{\frac{1}{N}\sum_{u,i}(\hat{y}_{i}-y_{i})^2}$$
+# Data Loading and Wrangling
+
+```{r Loading Data, message=FALSE, warning=FALSE, echo=FALSE}
+# Download the file and load into R data
+# This data is originally from https://www.kaggle.com/zynicide/wine-reviews
+# I downloaded the file and uploaded to github for ease of access and you don't need to have a Kaggle account to download the dataset.
+
+dl <- tempfile()
+download.file("https://raw.githubusercontent.com/yumski/wine-price/master/winemag-data-130k-v2.csv", dl)
+dat <- read.csv(dl)
+
+rm(dl)
+head(dat)
+```
+Here we see the first few rows of the data, there are a lot of information available to us. I will tidy the data and only keep the columns I plan to use.
+```{r message=FALSE, warning=FALSE}
+new_dat <- dat %>%
+  select(X, country, points, price, province, taster_name, title, variety, winery)
+
+head(new_dat)
+```
+From the table above, some of the price are not available. We will discard those rows as well.
+```{r message=FALSE, warning=FALSE}
+new_dat <- new_dat %>%
+  filter(!is.na(price))
+
+```
+Another pattern emerge from the table; under the title column all of the titles includes the year that the wine is made. We can extract this important information and store in it's own column.
+```{r Extract Year, message=FALSE, warning=FALSE}
+pattern <- "\\d{4}"
+year <- str_extract(new_dat$title, pattern)
+
+new_dat <- new_dat %>%
+  mutate(years = year)
+
+head(new_dat)
+```
+The most important rule in machine learning is to not train on data that will be tested on. For the last part of data wrangling is to divide the data into a modeling/training set and a validation set. It will be a 90/10% split.
+```{r message=FALSE, warning=FALSE}
+set.seed(123, sample.kind = "Rounding")
+
+ind <- createDataPartition(new_dat$price, times=1, p=0.1, list=FALSE)
+wine_dat <- new_dat[-ind,]
+validate_dat <- new_dat[ind,]
+```
+
+# Data Analysis
+
+To start the data analysis, first we will take a look at the dimension of the dataset.
+```{r message=FALSE, warning=FALSE}
+dim(wine_dat)
+```
+
