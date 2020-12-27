@@ -33,6 +33,7 @@ The goal I have set for this project is to analyze to see how each of the factor
 
 The formula is defined:
 $$RMSE =\sqrt{\frac{1}{N}\sum_{u,i}(\hat{y}_{i}-y_{i})^2}$$
+
 # Data Loading and Wrangling
 
 ```{r Loading Data, message=FALSE, warning=FALSE, echo=FALSE}
@@ -50,7 +51,7 @@ head(dat)
 Here we see the first few rows of the data, there are a lot of information available to us. I will tidy the data and only keep the columns I plan to use.
 ```{r message=FALSE, warning=FALSE}
 new_dat <- dat %>%
-  select(X, country, points, price, province, taster_name, title, variety, winery)
+  select(X, country, points, price, title, variety, winery)
 
 head(new_dat)
 ```
@@ -70,7 +71,7 @@ new_dat <- new_dat %>%
 
 head(new_dat)
 ```
-The most important rule in machine learning is to not train on data that will be tested on. For the last part of data wrangling is to divide the data into a modeling/training set and a validation set. It will be a 90/10% split.
+The most important rule in machine learning is to not train on data that will be tested on. This is to prevent over training and over smoothing. For the last part of data wrangling is to divide the data into a modeling/training set and a validation set. It will be a 90/10% split.
 ```{r message=FALSE, warning=FALSE}
 set.seed(123, sample.kind = "Rounding")
 
@@ -81,8 +82,332 @@ validate_dat <- new_dat[ind,]
 
 # Data Analysis
 
-To start the data analysis, first we will take a look at the dimension of the dataset.
+To begin the data analysis, first we will take a look at the dimension of the dataset.
 ```{r message=FALSE, warning=FALSE}
 dim(wine_dat)
 ```
+There are 108875 total entries for our training set.
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+data.frame(Country = length(unique(wine_dat$country)),
+           Points = length(unique(wine_dat$points)),
+           Price = length(unique(wine_dat$price)),
+           Province = length(unique(wine_dat$province)),
+           Taster_name = length(unique(wine_dat$taster_name)),
+           Title = length(unique(wine_dat$title)),
+           Variety = length(unique(wine_dat$variety)),
+           Winery = length(unique(wine_dat$winery)),
+           Year = length(unique(wine_dat$years)))
+```
+Here is the breakdown of unique entries in each column. We see there are only 21 unique entries in the points column, which is strange because the point scale is out of 100.
+```{r message=FALSE, warning=FALSE}
+c(min(wine_dat$points), max(wine_dat$points))
+```
+We see the point distribution is actually from 80 to 100, this is an important piece of information for us to proceed with. A consumer might assumes 80 is a relatively high score, however it's actually the lowest score they give.
+```{r message=FALSE, warning=FALSE}
+c(min(wine_dat$price), max(wine_dat$price))
+```
+The price covers a wide range of wines as well. In this data, it covers everything from 4USD to 2500USD.
+
+## Breakdown by Country
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+wine_dat %>%
+  group_by(country) %>%
+  summarize(n = n()) %>%
+  ggplot(aes(n, country)) +
+  geom_point() +
+  scale_x_sqrt() +
+  xlab("Count (Square Root scale)") +
+  ylab("Country") +
+  theme_hc() +
+  ggtitle("Country Count Distribution",
+          subtitle = "Figure 1")
+```
+Here is the breakdown of the number of entries each country is represented in the data. We see that majority of the entries are from 4 countries: US, France, Spain and Italy. This is not surprising as these 4 countries are the largest producers of wine.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+wine_dat %>%
+  group_by(country) %>%
+  summarize(n = n(), price = price, country = country) %>%
+  filter(n > 500) %>%
+  ggplot(aes(country, price)) +
+  geom_boxplot() +
+  scale_y_log10() +
+  xlab("Country") +
+  ylab("Price (Log 10 scale)") +
+  theme(axis.text.x=element_text(angle=90,hjust=1)) +
+  theme_hc() +
+  ggtitle("Price by Country",
+          subtitle = "Figure 2")
+```
+This graph breaks down the price distribution for countries with over 500 entries. Each rectangle represents the 25 to 75% percentile for the price, the line inside the rectangle represents the median price. This means the larger the triangle, the higher variance of the price in that relative country.
+
+We see from this graph that the US has the highest average price with average size variance. Chile has the lowest variance and the lowest average price. France has the most wines in highest price percentile, however their average wine price is lower than the US.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+wine_dat %>%
+  group_by(country) %>%
+  summarize(n = n(), points = points, country = country) %>%
+  filter(n > 500) %>%
+  ggplot(aes(country, points)) +
+  geom_boxplot() +
+  xlab("Country") +
+  ylab("Points") +
+  theme(axis.text.x=element_text(angle=90, hjust=1)) +
+  theme_hc() +
+  ggtitle("Points by Country",
+          subtitle = "Figure 3")
+```
+We will do the same breakdown for the points distribution. Germany, Austria and Australia has the highest average rating; Chile with the lowest average price also has the lowest average rating. However, despite having the highest average rating - none of those 3 countries have any wines that has the perfect score. Only US, France, Italy and Portugal have wines that received the perfect rating.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+wine_dat %>%
+  group_by(country) %>%
+  summarize(n = n(), price = price, country = country, avg_pts = mean(points), avg_p = mean(price)) %>%
+  filter(n > 100) %>%
+  arrange(desc(n)) %>%
+  top_n(100) %>%
+  ggplot(aes(avg_pts, avg_p, color = country)) +
+  geom_point() +
+  theme_hc() +
+  xlab("Average Points") +
+  ylab("Average Price") +
+  ggtitle("Avg Price and Points by Country",
+          subtitle = "Figure 4")
+```
+When the average price and points are compared, we do see a pattern emerging. There is a general trend with the higher the average points the average price is also higher. 
+```{r warning=FALSE, message=FALSE}
+country_avg <- wine_dat %>%
+  group_by(country) %>%
+  summarize(avg_pts = mean(points), avg_p = mean(price))
+
+correlate <- data.frame(Category = "Category",
+                        Correlation = "Correlation") 
+
+correlate <- bind_rows(Category = "Country",
+                       Correlation = cor(country_avg$avg_pts, country_avg$avg_p))
+correlate
+```
+We can use the correlate function to calculate our findings, we will make it into a data tables so we can observe which category has the highest correlation with the wine's price. This function returns a range from -1 to 1, where -1 is negative correlation and 1 is positive.
+
+The country category returned a 0.468, this means that it shows some positive correlation but not overwhelming.
+
+## Breakdown by Variety
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+wine_dat %>%
+  group_by(variety) %>%
+  summarize(n = n()) %>%
+  filter(n > 500) %>%
+  ggplot(aes(n, variety)) +
+  geom_point() +
+  scale_x_sqrt() +
+  xlab("Count (Square Root Sclae)") +
+  ylab("Variety")
+  theme_hc() +
+  ggtitle("Variety Count Distribution",
+          subtitle = "Figure 5")
+```
+In this graph, I have plotted the variety of wine that has more than 500 entries. From the distribution by variety, the top 5 most rated wine types are: Pinot Noir, Chardonnay, Carbernet Sauvignon, Red Blend and Bordeaux-style Red Blend. Four out of the five most rated wines are red wines, only Chardonnay is a white wine.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+wine_dat %>%
+  group_by(variety) %>%
+  summarize(n = n(), price = price, points = points, variety = variety) %>%
+  filter(n > 500) %>%
+  ggplot(aes(variety, price)) +
+  geom_boxplot() +
+  scale_y_log10() +
+  theme_hc() +
+  xlab("Variety") +
+  ylab("Price") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  ggtitle("Variety Price Distribution",
+          subtitle = "Figure 6")
+```
+There aren't any distinct pattern emerging from this graph. The different types of wine have wide range of variance in price. Three out of the top five most rated wines are represented in the highest price range of over 1000USD. The Bordeaux-style Red Blend is the variety with the most wines there is that price range, however the average price for this wine is in line with the other varieties.
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+wine_dat %>%
+  group_by(variety) %>%
+  summarize(n = n(), price = price, points = points, variety = variety) %>%
+  filter(n > 500) %>%
+  ggplot(aes(variety, points)) +
+  geom_boxplot() +
+  scale_y_log10() +
+  xlab("Variety") +
+  ylab("Points") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  theme_hc() +
+  ggtitle("Variety Points Distribution",
+          subtitle = "Figure 7")
+
+```
+Pinot Noir, the most rated wine also has one of the highest ratings as well. The Bordeaux Style Red Blend has a large variance in it's ratings same as it's price. Like the previous graph, it does not have a distinct pattern emerging.
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+wine_dat %>%
+  group_by(variety) %>%
+  summarize(n = n(), avg_p = mean(price), avg_pts = mean(points), variety = variety) %>%
+  filter(n > 500) %>%
+  ggplot(aes(avg_pts, avg_p, color = variety)) +
+  geom_point() +
+  xlab("Average Points") +
+  ylab("Average Price") +
+  theme_hc() +
+  ggtitle("Avg Points and Price by Variety",
+          subtitle = "Figure 8")
+```
+There is linear distribution at the lower end of the average point scale (< 88). As it moves past that point the distribution becomes much more scattered. When broken down the variety, there is not a distinct pattern.
+```{r warning=FALSE, message=FALSE}
+variety_avg <- wine_dat %>%
+  group_by(variety) %>%
+  summarize(avg_pts = mean(points), avg_p = mean(price))
+
+correlate <- bind_rows(correlate,
+                       data.frame(Category = "Variety",
+                       Correlation = cor(variety_avg$avg_pts, variety_avg$avg_p)))
+```
+The variety correlation returned a 0.427, this is consistent with the finding of our data analysis. The different types of wine does not play a big role in affecting the price and points. This is an interesting find, prior to doing this project I had the misconception of the different type of wine has a drastic effect on the price and point.
+
+## Breakdown by Year
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+wine_dat %>%
+  group_by(years) %>%
+  summarize(n = n(), price = price, points = points, years = years) %>%
+  filter(n > 100) %>%
+  ggplot(aes(n, years)) +
+  geom_point() +
+  theme_hc() +
+  xlab("Count") +
+  ylab("Years") +
+  ggtitle("Distribution by Year",
+          subtitle = "Figure 9")
+```
+In this graph, we see that majority of the reviews of the wines in the list are for ones that are produced recently. The top 5 years with over 10,000 review each are between the year of 2010 to 2014. We know the climate is a big factor in grape/wine production, let's dig deeper into the data to see if there is any evidence of this affecting the price and points of the wines.
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+wine_dat %>%
+  group_by(years) %>%
+  summarize(n = n(), points = points, price = price, years = years) %>%
+  filter(n > 500, !is.na(years)) %>%
+  ggplot(aes(years, price)) +
+  geom_boxplot() +
+  scale_y_log10() +
+  theme_hc() + 
+  xlab("Years") +
+  ylab("Price (Log 10 Scale)") +
+  ggtitle("Years Price Distribution",
+          subtitle = "Figure 10")
+```
+In this graph we can observe that from the year 2006 to 2013, the distribution of the price is quite similar. The rectangles are very similar to each other in height and the top percentile, however there is more variation at the bottom percentile.
+
+We can also observe that the year 2004 has the highest average price, however it did not have any wines in the in the extreme upper percentile of price. Alternatively, the most recent years in this data set (2016) has by far the lowest variance and price. Only 6 years has wines that are priced at over 1000USD, with the year 2009 has the most appearances.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+wine_dat %>%
+  group_by(years) %>%
+  summarize(n = n(), points = points, price = price, years = years) %>%
+  filter(n > 500, !is.na(years)) %>%
+  ggplot(aes(years, points)) +
+  geom_boxplot() +
+  theme_hc() +
+  xlab("Years") +
+  ylab("Points") +
+  ggtitle("Years Points Distribution",
+          subtitle = "Figure 11")
+```
+In the points distribution breakdown, we see that there are several groups of nearly identical distributions. Year 1999  to 2001, 2006 to 2011 and 2012 to 2014 are the 3 groups that falls into this pattern. When we refer back to Figure 9, we see that years 2012-2014 are the 3 years with the most ratings. We also can observe that there are only 6 years that has wines with perfect rating.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+wine_dat %>%
+  group_by(years) %>%
+  summarize(n = n(), avg_p = mean(price), avg_pts = mean(points), years = years) %>%
+  filter(n > 100) %>%
+  ggplot(aes(avg_pts, avg_p, color = years)) +
+  geom_point() +
+  theme_hc() +
+  xlab("Average Points") +
+  ylab("Average Price") +
+  ggtitle("Avg Points and Price by Year",
+          subtitle = "Figure 12")
+```
+This graph confirms our findings from the previous 2 figures. There are clusters of points around 3 price and rating areas. From these observations we can deduce that the climate is relatively similar in a period of few years. This effects the growth condition of the grapes and the quality of the wine.
+```{r warning=FALSE, message=FALSE}
+years_avg <- wine_dat %>%
+  group_by(years) %>%
+  filter(!is.na(years)) %>%
+  summarize(avg_pts = mean(points), avg_p = mean(price))
+
+correlate <- bind_rows(correlate,
+                       data.frame(
+                         Category = "Years",
+                         Correlation = cor(years_avg$avg_pts, years_avg$avg_p)
+                       ))
+
+correlate
+```
+When grouped by the years category, the average price and points showed the highest correlation so far. This further reinforce our finding from the visual analysis. Even though I had preconceived notion that the year of the wine is important, I did not think it was so much greater than the other categories.
+## Breakdown by Winery
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+wine_dat %>%
+  group_by(winery) %>%
+  summarize(n = n(), winery) %>%
+  filter(n > 100) %>%
+  ggplot(aes(n, winery)) +
+  geom_point() +
+  theme_hc() +
+  ggtitle("Winery Count Distribution",
+          subtitle = "Figure 13")
+```
+When we observe the breakdown by winery, we can conclude that the distribution is quite even. The most rated winery only has about 200 observations. The data set is not dominated by a few wineries unlike the country and years categories. Since there are many wineries used in this data set, we are only going to graph the ones were rated over 100 times.
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+wine_dat %>%
+  group_by(winery) %>%
+  summarize(n = n(), winery, price, points) %>%
+  filter(n > 100) %>%
+  ggplot(aes(winery, price)) +
+  geom_boxplot() +
+  scale_y_log10() +
+  xlab("Winery") +
+  ylab("Price (Log 10 Scale)") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  theme_hc() +
+  ggtitle("Price by Winery Distribution",
+          subtitle = "Figure 14")
+```
+This boxplot is the opposite of the distribution for the years category (figure 10). This makes sense as some wineries are very reputable brands and can charge accordingly. The most expensive winery is Louis Latour, the median price for their wine is higher than all of the other winery's upper box limits. On the other end of the spectrum DFJ Vinhos is the cheapest winery, with the median price at 10USD. Next we will take a look at their respective points and see if the price is reflected in their rating.
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+wine_dat %>%
+  group_by(winery) %>%
+  summarize(n = n(), winery, price, points) %>%
+  filter(n > 100) %>%
+  ggplot(aes(winery, points)) +
+  geom_boxplot() +
+  xlab("Winery") +
+  ylab("Points") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  theme_hc() +
+  ggtitle("Points by Winery Distribution",
+          subtitle = "Figure 15")
+```
+When looking at the the points distribution, we see that even though Louis Latour is the most expensive winery, they do not have the highest average rating. The two wineries with the highest average ratings are William Selyem and Lynmar. Those 2 wineries are among the highest in median prices, however both of their variance in price are small compared to Louis Latour. On the other end of the spectrum, DFJ Vinhos is the cheapest wineries and they have also received the lowest median. However the Santa Ema winery has higher variance is has more wines rated lower than DFJ Vinhos.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+wine_dat %>%
+  group_by(winery) %>%
+  summarize(n = n(), winery = winery, avg_pts = mean(points), avg_p = mean(price)) %>%
+  filter(n > 100) %>%
+  ggplot(aes(avg_pts, avg_p, color = winery)) +
+  geom_point() +
+  xlab("Average Points") +
+  ylab("Average Price") +
+  theme_hc() +
+  ggtitle("Avg Price and Points by Winery",
+          subtitle = "Figure 16")
+```
+In the winery breakdown, we can observe a linear pattern emerging. All the points besides one (Louis Latour) fits on the linear progression line. 
+```{r message=FALSE, warning=FALSE}
+winery_avg <- wine_dat %>%
+  group_by(winery) %>%
+  summarize(winery = winery, avg_pts = mean(points), avg_p = mean(price))
+
+correlate <- bind_rows(correlate, 
+                       data.frame(Category = "Winery",
+                                  Correlation = cor(winery_avg$avg_pts, winery_avg$avg_p)))
+correlate
+```
+The winery category has the second highest correlation. Even though the previous graph showed a linear plot, we must remember those are only for wineries that was rated over 100 times. There are over 15000 unique wineries included in this data set. This leads to wineries with small numbers of reviews skew the data. This is a important thing to consider during the modeling step.
+
+# Modeling
 
