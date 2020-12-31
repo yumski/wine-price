@@ -33,6 +33,11 @@ The goal I have set for this project is to analyze to see how each of the factor
 
 The formula is defined:
 $$RMSE =\sqrt{\frac{1}{N}\sum_{u,i}(\hat{y}_{i}-y_{i})^2}$$
+```{r message=FALSE, warning=FALSE}
+RMSE <- function(predicted_price, actual_price){
+  sqrt(mean((predicted_price - actual_price)^2))
+}
+```
 
 # Data Loading and Wrangling
 
@@ -407,7 +412,42 @@ correlate <- bind_rows(correlate,
                                   Correlation = cor(winery_avg$avg_pts, winery_avg$avg_p)))
 correlate
 ```
-The winery category has the second highest correlation. Even though the previous graph showed a linear plot, we must remember those are only for wineries that was rated over 100 times. There are over 15000 unique wineries included in this data set. This leads to wineries with small numbers of reviews skew the data. This is a important thing to consider during the modeling step.
+The winery category has the second highest correlation. Even though the previous graph showed a linear plot, we must remember those are only for wineries that was rated over 100 times. There are over 15000 unique wineries included in this data set. This leads to wineries with small numbers of reviews skew the data. This is a important factor to consider during the modeling step.
 
 # Modeling
+
+For this project, we will use two machine learning models to create an ensemble for the lowest possible RMSE. To prevent over training we will further partition the data set. We will only apply the model to the validate set at the very end.
+```{r message=FALSE, warning=FALSE}
+set.seed(111, sample.kind = "Rounding")
+ind <- createDataPartition(wine_dat$price, times = 1, p = 0.1, list = FALSE)
+
+train_dat <- wine_dat[-ind,]
+test_dat <- wine_dat[ind,]
+```
+
+## Linear Regression Model
+
+The first model we will explore is the linear regression model. This model takes into account the bias that effects the price in all 4 categories we examined. The formula will be:
+$$\hat{y}_i=\mu+b_c+b_v+b_y+b_w$$
+$$\hat{y}_i$$ is the Predicted price for wine $$i$$.
+$$\\mu$$ is the average price of all the wines.
+$$b_c$$ is the bias for the country.
+$$b_v$$ is the bias for the variety of wine.
+$$b_y$$ is the bias for the year the wine was produced.
+$$b_w$$ is the bias for the winery that the wine was produced at.
+
+First we will determine a baseline by predicting the average price to all the wines.
+```{r message=FALSE, warning=FALSE}
+mu <- mean(train_dat$price)
+
+
+result <- data.frame(Method = "Method",
+                     RMSE = "RMSE")
+
+result <- bind_rows(result,
+                    data.frame(Method = "Baseline",
+                               RMSE = RMSE(mu, test_dat$price)))
+result
+```
+The RMSE baseline is rather substantial, however this is expected. The price range for the wines are large and there are rare wines that are drastically more expensive than the average wine. Let's factor in the biases to see how that affects the RMSE.
 

@@ -22,14 +22,11 @@ rm(dl)
 
 head(dat)
 
-# Filter out columsn that I don't plan to use
+# Filter out columns that I don't plan to use
 
 new_dat <- dat %>%
-  select(X, country, points, price, title, variety, winery)
+  select(country, points, price, variety, winery)
 
-# Remove all entries with NA as price
-new_dat <- new_dat %>%
-  filter(!is.na(price))
 
 # Extract year from title and make into it's own column
 pattern <- "\\d{4}"
@@ -37,6 +34,10 @@ year <- str_extract(new_dat$title, pattern)
 
 new_dat <- new_dat %>%
   mutate(years = year)
+
+# Filter out NAs from dataset
+new_dat <- new_dat %>%
+  filter(!is.na(price), !is.na(points), !is.na(country), !is.na(variety), !is.na(years), !is.na(winery))
 
 head(new_dat)
 
@@ -47,7 +48,14 @@ ind <- createDataPartition(new_dat$price, times=1, p=0.1, list=FALSE)
 wine_dat <- new_dat[-ind,]
 validate_dat <- new_dat[ind,]
 
+
 dim(wine_dat)
+
+# RMSE Function
+
+RMSE <- function(predicted_price, actual_price){
+  sqrt(mean((predicted_price - actual_price)^2))
+}
 
 # Dataframe for number of unique entires
 data.frame(Country = length(unique(wine_dat$country)),
@@ -293,8 +301,8 @@ wine_dat %>%
   ggplot(aes(winery, price)) +
   geom_boxplot() +
   scale_y_log10() +
-  xlab("Winery") +
-  ylab("Price (Log 10 Scale)") +
+  ylab("Winery") +
+  xlab("Price (Log 10 Scale)") +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   theme_hc() +
   ggtitle("Price by Winery Distribution",
@@ -336,3 +344,21 @@ correlate <- bind_rows(correlate,
                        data.frame(Category = "Winery",
                                   Correlation = cor(winery_avg$avg_pts, winery_avg$avg_p)))
 correlate
+
+# Partition data into train and test set
+set.seed(111, sample.kind = "Rounding")
+ind <- createDataPartition(wine_dat$price, times = 1, p = 0.1, list = FALSE)
+
+train_dat <- wine_dat[-ind,]
+test_dat <- wine_dat[ind,]
+
+# Baseline
+mu <- mean(train_dat$price)
+
+
+result <- data.frame(Method = "Method",
+                     RMSE = RMSE(mu, test_dat$price))
+
+result
+
+
