@@ -60,19 +60,18 @@ new_dat <- dat %>%
 
 head(new_dat)
 ```
-From the table above, some of the price are not available. We will discard those rows as well.
-```{r message=FALSE, warning=FALSE}
-new_dat <- new_dat %>%
-  filter(!is.na(price))
-
-```
-Another pattern emerge from the table; under the title column all of the titles includes the year that the wine is made. We can extract this important information and store in it's own column.
+We can observe the titles includes the year that the wine is produce. We can extract this important information and store in it's own column.
 ```{r Extract Year, message=FALSE, warning=FALSE}
 pattern <- "\\d{4}"
 year <- str_extract(new_dat$title, pattern)
 
 new_dat <- new_dat %>%
   mutate(years = year)
+
+# Filter out NAs from dataset
+new_dat <- new_dat %>%
+  filter(!is.na(price), !is.na(points), !is.na(country), !is.na(variety), !is.na(years), !is.na(winery))
+
 
 head(new_dat)
 ```
@@ -442,11 +441,8 @@ mu <- mean(train_dat$price)
 
 
 result <- data.frame(Method = "Method",
-                     RMSE = "RMSE")
+                     RMSE = RMSE = RMSE(mu, test_dat$price))
 
-result <- bind_rows(result,
-                    data.frame(Method = "Baseline",
-                               RMSE = RMSE(mu, test_dat$price)))
 result
 ```
 The RMSE baseline is rather substantial, however this is expected. The price range for the wines are large and there are rare wines that are drastically more expensive than the average wine. Let's factor in the biases to see how that affects the RMSE.
