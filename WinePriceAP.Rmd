@@ -175,7 +175,24 @@ wine_dat %>%
   ggtitle("Avg Price and Points by Country",
           subtitle = "Figure 4")
 ```
-When the average price and points are compared, we do see a pattern emerging. There is a general trend with the higher the average points the average price is also higher. 
+When the average price and points are compared, the points are very scattered. There is not a strong correlation between the average points and price when grouped by country. The country with the highest average points is ranked 9th when it comes to the average price.
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+wine_dat %>%
+  group_by(country) %>%
+  summarize(n = n(), stan_dev = sd(price)) %>%
+  mutate(group = cut(n,
+                     breaks = c(0, mean(n), Inf),
+                     labels = c("< than average", "> than average"))) %>%
+  ggplot(aes(stan_dev, fill = group)) +
+  geom_density(alpha = 0.5) +
+  xlab("Standard Deviation") +
+  ylab("Density") +
+  theme_hc() +
+  ggtitle("Price Standard Deviation by Country",
+          subtitle = "Figure 5")
+
+```
+When we group the groups into greater and less than average number of ratings to compare the standard deviation; we see that the countries with less ratings has lower standard deviation. This does makes sense; the countries that were rated more has a wider quality range and their producers sell wines at more price points.
 ```{r warning=FALSE, message=FALSE}
 country_avg <- wine_dat %>%
   group_by(country) %>%
@@ -205,7 +222,7 @@ wine_dat %>%
   ylab("Variety")
   theme_hc() +
   ggtitle("Variety Count Distribution",
-          subtitle = "Figure 5")
+          subtitle = "Figure 6")
 ```
 In this graph, I have plotted the variety of wine that has more than 500 entries. From the distribution by variety, the top 5 most rated wine types are: Pinot Noir, Chardonnay, Carbernet Sauvignon, Red Blend and Bordeaux-style Red Blend. Four out of the five most rated wines are red wines, only Chardonnay is a white wine.
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
@@ -221,7 +238,7 @@ wine_dat %>%
   ylab("Price") +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   ggtitle("Variety Price Distribution",
-          subtitle = "Figure 6")
+          subtitle = "Figure 7")
 ```
 There aren't any distinct pattern emerging from this graph. The different types of wine have wide range of variance in price. Three out of the top five most rated wines are represented in the highest price range of over 1000USD. The Bordeaux-style Red Blend is the variety with the most wines there is that price range, however the average price for this wine is in line with the other varieties.
 ```{r message=FALSE, warning=FALSE, echo=FALSE}
@@ -237,7 +254,7 @@ wine_dat %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   theme_hc() +
   ggtitle("Variety Points Distribution",
-          subtitle = "Figure 7")
+          subtitle = "Figure 8")
 
 ```
 Pinot Noir, the most rated wine also has one of the highest ratings as well. The Bordeaux Style Red Blend has a large variance in it's ratings same as it's price. Like the previous graph, it does not have a distinct pattern emerging.
@@ -252,9 +269,26 @@ wine_dat %>%
   ylab("Average Price") +
   theme_hc() +
   ggtitle("Avg Points and Price by Variety",
-          subtitle = "Figure 8")
+          subtitle = "Figure 9")
 ```
 There is linear distribution at the lower end of the average point scale (< 88). As it moves past that point the distribution becomes much more scattered. When broken down the variety, there is not a distinct pattern.
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+wine_dat %>%
+  group_by(variety) %>%
+  summarize(n = n(), stan_dev = sd(price)) %>%
+  mutate(group = cut(n,
+                     breaks = c(0, mean(n), Inf),
+                     labels = c("< than average", "> than average"))) %>%
+  ggplot(aes(stan_dev, fill = group)) +
+  geom_density(alpha = 0.5) +
+  xlab("Standard Deviation") +
+  ylab("Density") +
+  theme_hc() +
+  ggtitle("Price Standard Deviation by Variety",
+          subtitle = "Figure 10")
+
+```
+The standard deviation graph for the variety category is similar to the one for the country category. We see lower standard deviation for the group that were rated less than the average amount. The variety of wine that were rated a lot are most likely to be the more popular ones. Therefore the producers is looking to produce both wines that are tranges from everyday consumers and also others for connoisseurs. 
 ```{r warning=FALSE, message=FALSE}
 variety_avg <- wine_dat %>%
   group_by(variety) %>%
@@ -278,7 +312,7 @@ wine_dat %>%
   xlab("Count") +
   ylab("Years") +
   ggtitle("Distribution by Year",
-          subtitle = "Figure 9")
+          subtitle = "Figure 11")
 ```
 In this graph, we see that majority of the reviews of the wines in the list are for ones that are produced recently. The top 5 years with over 10,000 review each are between the year of 2010 to 2014. We know the climate is a big factor in grape/wine production, let's dig deeper into the data to see if there is any evidence of this affecting the price and points of the wines.
 ```{r message=FALSE, warning=FALSE, echo=FALSE}
@@ -293,7 +327,7 @@ wine_dat %>%
   xlab("Years") +
   ylab("Price (Log 10 Scale)") +
   ggtitle("Years Price Distribution",
-          subtitle = "Figure 10")
+          subtitle = "Figure 12")
 ```
 In this graph we can observe that from the year 2006 to 2013, the distribution of the price is quite similar. The rectangles are very similar to each other in height and the top percentile, however there is more variation at the bottom percentile.
 
@@ -309,7 +343,7 @@ wine_dat %>%
   xlab("Years") +
   ylab("Points") +
   ggtitle("Years Points Distribution",
-          subtitle = "Figure 11")
+          subtitle = "Figure 13")
 ```
 In the points distribution breakdown, we see that there are several groups of nearly identical distributions. Year 1999  to 2001, 2006 to 2011 and 2012 to 2014 are the 3 groups that falls into this pattern. When we refer back to Figure 9, we see that years 2012-2014 are the 3 years with the most ratings. We also can observe that there are only 6 years that has wines with perfect rating.
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
@@ -323,9 +357,26 @@ wine_dat %>%
   xlab("Average Points") +
   ylab("Average Price") +
   ggtitle("Avg Points and Price by Year",
-          subtitle = "Figure 12")
+          subtitle = "Figure 14")
 ```
 This graph confirms our findings from the previous 2 figures. There are clusters of points around 3 price and rating areas. From these observations we can deduce that the climate is relatively similar in a period of few years. This effects the growth condition of the grapes and the quality of the wine.
+```{r  echo=FALSE, message=FALSE, warning=FALSE}
+wine_dat %>%
+  group_by(years) %>%
+  summarize(n = n(), stan_dev = sd(price)) %>%
+  mutate(group = cut(n,
+                     breaks = c(0, mean(n), Inf),
+                     labels = c("< than average", "> than average"))) %>%
+  ggplot(aes(stan_dev, fill = group)) +
+  geom_density(alpha = 0.5) +
+  xlab("Standard Deviation") +
+  ylab("Density") +
+  theme_hc() +
+  ggtitle("Price Standard Deviation by Years",
+          subtitle = "Figure 15")
+
+```
+The standard deviation for the years category is complete opposite of the breakdown for the country and variety groups. For the years that were rated more than the average, it is very concentrated. This is in line with our previous observations. Majority of the wines in this data set are from 2010 to 2016, we saw in the box plots that the distribution is quite similar. As the wine gets older it tends to be more rare, and those tend to be more expensive.
 ```{r warning=FALSE, message=FALSE}
 years_avg <- wine_dat %>%
   group_by(years) %>%
@@ -352,7 +403,7 @@ wine_dat %>%
   geom_point() +
   theme_hc() +
   ggtitle("Winery Count Distribution",
-          subtitle = "Figure 13")
+          subtitle = "Figure 16")
 ```
 When we observe the breakdown by winery, we can conclude that the distribution is quite even. The most rated winery only has about 200 observations. The data set is not dominated by a few wineries unlike the country and years categories. Since there are many wineries used in this data set, we are only going to graph the ones were rated over 100 times.
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
@@ -368,7 +419,7 @@ wine_dat %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   theme_hc() +
   ggtitle("Price by Winery Distribution",
-          subtitle = "Figure 14")
+          subtitle = "Figure 17")
 ```
 This boxplot is the opposite of the distribution for the years category (figure 10). This makes sense as some wineries are very reputable brands and can charge accordingly. The most expensive winery is Louis Latour, the median price for their wine is higher than all of the other winery's upper box limits. On the other end of the spectrum DFJ Vinhos is the cheapest winery, with the median price at 10USD. Next we will take a look at their respective points and see if the price is reflected in their rating.
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
@@ -383,7 +434,7 @@ wine_dat %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   theme_hc() +
   ggtitle("Points by Winery Distribution",
-          subtitle = "Figure 15")
+          subtitle = "Figure 18")
 ```
 When looking at the the points distribution, we see that even though Louis Latour is the most expensive winery, they do not have the highest average rating. The two wineries with the highest average ratings are William Selyem and Lynmar. Those 2 wineries are among the highest in median prices, however both of their variance in price are small compared to Louis Latour. On the other end of the spectrum, DFJ Vinhos is the cheapest wineries and they have also received the lowest median. However the Santa Ema winery has higher variance is has more wines rated lower than DFJ Vinhos.
 
@@ -398,9 +449,27 @@ wine_dat %>%
   ylab("Average Price") +
   theme_hc() +
   ggtitle("Avg Price and Points by Winery",
-          subtitle = "Figure 16")
+          subtitle = "Figure 19")
 ```
 In the winery breakdown, we can observe a linear pattern emerging. All the points besides one (Louis Latour) fits on the linear progression line. 
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+wine_dat %>%
+  group_by(winery) %>%
+  summarize(n = n(), stan_dev = sd(price)) %>%
+  mutate(group = cut(n,
+                     breaks = c(0, mean(n), Inf),
+                     labels = c("< than average", "> than average"))) %>%
+  ggplot(aes(stan_dev, fill = group)) +
+  geom_density(alpha = 0.5) +
+  xlab("Standard Deviation (Sq root scale)") +
+  ylab("Density") +
+  scale_x_sqrt() +
+  theme_hc() +
+  ggtitle("Price Standard Deviation by Winery",
+          subtitle = "Figure 20")
+
+```
+When grouped by winery, the number of times each winery rated does not seem to play a bit part in the price variance. This does make sense as well, as reputable winery generally charge more for all their wines and vice versa.
 ```{r message=FALSE, warning=FALSE}
 winery_avg <- wine_dat %>%
   group_by(winery) %>%
@@ -411,39 +480,284 @@ correlate <- bind_rows(correlate,
                                   Correlation = cor(winery_avg$avg_pts, winery_avg$avg_p)))
 correlate
 ```
-The winery category has the second highest correlation. Even though the previous graph showed a linear plot, we must remember those are only for wineries that was rated over 100 times. There are over 15000 unique wineries included in this data set. This leads to wineries with small numbers of reviews skew the data. This is a important factor to consider during the modeling step.
+The winery category has the second highest correlation. Even though the previous graph showed a linear plot, we must remember those are only for wineries that was rated over 100 times. There are over 15000 unique wineries included in this data set. This leads to wineries with small numbers of reviews that skew the data. This is a important factor to consider during the modeling step.
+
+## Breakdown by points
+
+Finally we will dive into the points breakdown to see if we can find any insights.
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+wine_dat %>%
+  group_by(points) %>%
+  summarize(n = n()) %>%
+  ggplot(aes(n)) +
+  geom_histogram(bins = 30, color = "black", fill = "blue") +
+  ylab("Count") +
+  theme_hc() +
+  ggtitle("Points Count Distribution",
+          subtitle = "Figure 21")
+```
+When we observe the distribution of the number of times each rating has been given, we see that there is a wide disparity between the counts. Out of the 21 different ratings, 10 was rated over 5,000 times - with 5 of those over 10,000 times. Out of the remaining 11, 7 of those has very few ratings and the 4 remaining were rated less than 2,500 times.
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+wine_dat %>%
+  group_by(points) %>%
+  summarize(n = n(), points = points) %>%
+  ggplot(aes(points, n)) +
+  geom_line() +
+  scale_y_log10() +
+  ylab("Count (Log 10 scale)") +
+  xlab("Points") +
+  theme_hc() +
+  ggtitle("Count by Points",
+          subtitle = "Figure 22")
+```
+We can observe that from this graph the 5 points that were given the most is from 86-91. This makes sense as the middle in a normal distribution curve is the highest. As we move to the edges the number of times each rating was given goes down. This is especially apparent when we look at the range from 95 to 100, it shows a sharp decline in the number of times each rating was given. 
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+wine_dat %>%
+  group_by(points) %>%
+  summarize(n = n(), stan_dev = sd(price)) %>%
+  mutate(group = cut(n,
+                     breaks = c(0, mean(n), Inf),
+                     labels = c("< than avg", "> than avg"))) %>%
+  ggplot(aes(stan_dev, fill = group)) +
+  geom_density(alpha = 0.5) +
+  xlab("Standard Deviation") +
+  ylab("Density") +
+  theme_hc() +
+  ggtitle("Standard Deviation of Price - Points Group",
+          subtitle = "Figure 23")
+```
+We can see a huge difference with the standard deviation when it was separated by the number of times each point was rated. The points that had was rated more than the average number has a relatively small standard deviation; the other group has a huge variance in the price.
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+wine_dat %>%
+  group_by(points) %>%
+  summarize(avg_p = mean(price), points = points) %>%
+  ggplot(aes(points, avg_p)) +
+  geom_point() +
+  xlab("Points") +
+  ylab("Average Price") +
+  theme_hc() +
+  ggtitle("Average Price by Points",
+          subtitle = "Figure 24")
+```
+There is an exponential curve when we plot the average price against the points. From the rating of 80 - 85 the average price is relatively flat. From 86 - 90 we begin to see increases, from 91+ we can observe exponential increases in the average price as the points increases. The average price of wines that were rated 100 is almost at 500USD per bottle. 
+```{r warning=FALSE, message=FALSE}
+pts_avg <- wine_dat %>%
+  group_by(points) %>%
+  summarize(avg_pts = mean(points), avg_p = mean(price))
+
+correlate <- bind_rows(correlate, 
+                       data.frame(Category = "Points",
+                                  Correlation = cor(pts_avg$avg_pts, pts_avg$avg_p)))
+correlate
+```
+We see there is strong correlation between the average price and it's relative point rating. This confirms our previous graph where we observed the exponential increase in price as the points increased. However, there is a large variance in the rating that were seldom given. 
 
 # Modeling
 
 For this project, we will use two machine learning models to create an ensemble for the lowest possible RMSE. To prevent over training we will further partition the data set. We will only apply the model to the validate set at the very end.
 ```{r message=FALSE, warning=FALSE}
+
+# Partition data into train and test set
 set.seed(111, sample.kind = "Rounding")
 ind <- createDataPartition(wine_dat$price, times = 1, p = 0.1, list = FALSE)
 
 train_dat <- wine_dat[-ind,]
-test_dat <- wine_dat[ind,]
+temp <- wine_dat[ind,]
+
+# Make sure the all the criteria are in both data sets
+test_data <- temp %>%
+  semi_join(train_dat, by = "country") %>%
+  semi_join(train_dat, by = "variety") %>%
+  semi_join(train_dat, by = "years") %>%
+  semi_join(train_dat, by = "winery")
 ```
 
 ## Linear Regression Model
 
 The first model we will explore is the linear regression model. This model takes into account the bias that effects the price in all 4 categories we examined. The formula will be:
-$$\hat{y}_i=\mu+b_c+b_v+b_y+b_w$$
+$$\hat{y}_i=\mu+b_c+b_v+b_y+b_w+b_p$$
 $$\hat{y}_i$$ is the Predicted price for wine $$i$$.
 $$\\mu$$ is the average price of all the wines.
 $$b_c$$ is the bias for the country.
 $$b_v$$ is the bias for the variety of wine.
 $$b_y$$ is the bias for the year the wine was produced.
 $$b_w$$ is the bias for the winery that the wine was produced at.
+$$b_p$$ is the bias for the point that each wine was rated.
 
 First we will determine a baseline by predicting the average price to all the wines.
 ```{r message=FALSE, warning=FALSE}
 mu <- mean(train_dat$price)
 
+c(min(train_dat$price), max(train_dat$price))
 
-result <- data.frame(Method = "Method",
-                     RMSE = RMSE = RMSE(mu, test_dat$price))
+result <- data.frame(Method = "Baseline",
+                     RMSE = RMSE(mu, test_dat$price))
 
 result
 ```
-The RMSE baseline is rather substantial, however this is expected. The price range for the wines are large and there are rare wines that are drastically more expensive than the average wine. Let's factor in the biases to see how that affects the RMSE.
+The RMSE baseline is rather substantial, however this is expected. The price range for the wines is 4 to 2500USD. This list include rare wines that can skew the numbers quite a bit. Let's factor in the other biases to see how that affects the RMSE.
+```{r message=FALSE, warning=FALSE}
+# Country bias
+b_c <- train_dat %>%
+  group_by(country) %>%
+  summarize(b_c = mean(price - mu))
 
+pred_bc <- test_data %>%
+  left_join(b_c, by = "country") %>%
+  mutate(pred = mu + b_c) %>%
+  .$pred
+
+result <- bind_rows(result, 
+                    data.frame(Method = "Country Bias",
+                               RMSE = RMSE(pred_bc, test_data$price)))
+result
+```
+When the country bias was factored in, there is a slight increase in the RMSE. When looking back at our data analysis for the country category, we saw large standard deviation for the countries that were rated the most. Also the number of ratings in those countries made up a large proportion of the data set. Taking that into consideration it does make sense on why this negatively affected the RMSE.
+```{r message=FALSE, warning=FALSE}
+# Variety bias
+b_v <- train_dat %>%
+  group_by(variety) %>%
+  summarize(b_v = mean(price - mu))
+
+pred_bcv <- test_data %>%
+  left_join(b_c, by = "country") %>%
+  left_join(b_v, by = "variety") %>%
+  mutate(pred = mu + b_c + b_v) %>%
+  .$pred
+
+result <- bind_rows(result, 
+                    data.frame(Method = "Country + Variety",
+                               RMSE = RMSE(pred_bcv, test_data$price)))
+result
+```
+The variety bias has a small decrease in the RMSE when factored in. The standard deviation distribution is similar to the ones for the countries. However, the ratings in the variety category has 655 unique observations compared to only 43 for countries. This means the ratings were more distributed when compared to the countries category.
+```{r message=FALSE, warning=FALSE}
+# Years Bias
+b_y <- train_dat %>%
+  group_by(years) %>%
+  summarize(b_y = mean(price - mu))
+
+pred_bcvy <- test_data %>%
+  left_join(b_c, by = "country") %>%
+  left_join(b_v, by = "variety") %>%
+  left_join(b_y, by = "years") %>%
+  mutate(pred = mu + b_c + b_v + b_y) %>%
+  .$pred
+
+
+result <- bind_rows(result, 
+                    data.frame(Method = "Country + Variety + Years",
+                               RMSE = RMSE(pred_bcvy, test_data$price)))
+result
+```
+There is a small decrease in the RMSE when factored in the years category. The standard deviation for the price was very concentrated for the years that were rated the most number of times. There is however large variance for the years that were not rated as much, we can address this when we apply regularization to the algorithm.
+```{r message=FALSE, warning=FALSE}
+# Winery Bias
+b_w <- train_dat %>%
+  group_by(winery) %>%
+  summarize(b_w = mean(price - mu))
+
+pred_bcvyw <- test_data %>%
+  left_join(b_c, by = "country") %>%
+  left_join(b_v, by = "variety") %>%
+  left_join(b_y, by = "years") %>%
+  left_join(b_w, by = "winery") %>%
+  mutate(pred = mu + b_c + b_v + b_y + b_w) %>%
+  .$pred
+
+result <- bind_rows(result, 
+                      data.frame(Method = "Country + Variety + Years + Winery",
+                                 RMSE = RMSE(pred_bcvyw, test_data$price)))
+result
+```
+There is a small decrease in the RMSE when factored in the years category. The standard deviation for the price was very concentrated for the years that were rated the most number of times. There is however large variance for the years that were not rated as much, we can address this when we apply regularization to the algorithm.
+```{r message=FALSE, warning=FALSE}
+# Points bias
+b_p <- train_dat %>%
+  group_by(points) %>%
+  summarize(b_p = mean(price - mu))
+
+pred_bcvywp <- test_data %>%
+  left_join(b_c, by = "country") %>%
+  left_join(b_v, by = "variety") %>%
+  left_join(b_y, by = "years") %>%
+  left_join(b_w, by = "winery") %>%
+  left_join(b_p, by = "points") %>%
+  mutate(pred = mu + b_c + b_v + b_y + b_w + b_p) %>%
+  .$pred
+
+result <- bind_rows(result, 
+                    data.frame(Method = "Country + Variety + Years + Winery + Points",
+                               RMSE = RMSE(pred_bcvywp, test_data$price)))
+result
+```
+
+There is a large increase in the RMSE when accounting for the points bias. In the points standard deviation graph we observed that there is huge variance in the price of the less given points. We also observed that there is an exponential increase in the average price as the points went above 95. The same range where there is a sharp decrease in the number of ratings. This high variance with low number of ratings skewed the algorithm.
+
+## Regularization
+
+In the linear regression model, we observed some biases with low number of occurrence and high variance. The regularization method introduce a tuning parameter to control the variability. This method will shrink the bias towards 0 when there are low number of occurrence, but will be effectively ignored when there is high number of occurrences.
+
+The formula we will use:
+$$
+\hat{y}_i= \frac{1}{\lambda + n_i} \sum_{u=1}^{n_i} \left(Y_{i} - b_v - b_y - b_w - b_p - \hat{\mu}\right)
+$$
+We will not be using the country bias due to the fact that we discovered the most rated countries actually had more variance compared to the seldom rated countries. Regularization will not be able to affect this, this method aims to provide more weight to the variables that appeared more in the data.
+
+Lambda is a tuning parameter, we can use machine learning to determine what the value is to give the lowest RMSE. We will run the lambda at the range of 0.25 to 10 at 0.25 increments.
+```{r message=FALSE, warning=FALSE}
+# establish lambda range
+lambdas <- seq(0.25, 10, 0.25)
+
+# regularization function
+regularization_rmse <- sapply(lambdas, function(l){
+  # variety regularization
+  bv_r <- train_dat %>%
+    group_by(variety) %>%
+    summarize(bv_r = sum(price - mu)/(n() + l))
+  # years regularization
+  by_r <- train_dat %>%
+    left_join(bv_r, by = "variety") %>%
+    group_by(years) %>%
+    summarize(by_r = sum(price - bv_r - mu)/(n() + l))
+  # winery regularization
+  bw_r <- train_dat %>%
+    left_join(bv_r, by = "variety") %>%
+    left_join(by_r, by = "years") %>%
+    group_by(winery) %>%
+    summarize(bw_r = sum(price - bv_r - by_r - mu)/(n() + l))
+  # points regularization
+  bp_r <- train_dat %>%
+    left_join(bv_r, by = "variety") %>%
+    left_join(by_r, by = "years") %>%
+    left_join(bw_r, by = "winery") %>%
+    group_by(points) %>%
+    summarize(bp_r = sum(price - bv_r - by_r - bw_r - mu)/(n() + l))
+  # predict algorithm
+  pred_reg <- test_data %>%
+    left_join(bv_r, by = "variety") %>%
+    left_join(by_r, by = "years") %>%
+    left_join(bw_r, by = "winery") %>%
+    left_join(bp_r, by = "points") %>%
+    mutate(pred = mu + bv_r + by_r + bw_r + bp_r) %>%
+    .$pred
+  
+  return(RMSE(pred_reg, test_data$price))
+})
+
+# Graph Lambdas vs RMSE
+data.frame(Lambdas = lambdas, RMSE = regularization_rmse) %>%
+  ggplot(aes(Lambdas, RMSE)) +
+  geom_point() +
+  theme_hc() +
+  ggtitle("Lambdas vs RMSE Distribution")
+
+lambda <- lambdas[which.min(regularization_rmse)]
+lambda
+
+result <- bind_rows(result,
+                    data.frame(Method = "Regularization",
+                               RMSE = min(regularization_rmse)))
+result
+```
+The regularization provided a drastic decrease in the RMSE. We observe from the graph that the lambda at 1.5 provided the lowest RMSE at 29.79118.

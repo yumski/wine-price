@@ -25,7 +25,7 @@ head(dat)
 # Filter out columns that I don't plan to use
 
 new_dat <- dat %>%
-  select(country, points, price, variety, winery)
+  select(country, points, title, price, variety, winery)
 
 
 # Extract year from title and make into it's own column
@@ -130,6 +130,21 @@ wine_dat %>%
   ggtitle("Avg Price and Points by Country",
           subtitle = "Figure 4")
 
+# Price standard deviation by Country
+wine_dat %>%
+  group_by(country) %>%
+  summarize(n = n(), stan_dev = sd(price)) %>%
+  mutate(group = cut(n,
+                     breaks = c(0, mean(n), Inf),
+                     labels = c("< than average", "> than average"))) %>%
+  ggplot(aes(stan_dev, fill = group)) +
+  geom_density(alpha = 0.5) +
+  xlab("Standard Deviation") +
+  ylab("Density") +
+  theme_hc() +
+  ggtitle("Price Standard Deviation by Country",
+          subtitle = "Figure 5")
+
 # Country price and points correlation
 country_avg <- wine_dat %>%
   group_by(country) %>%
@@ -155,7 +170,7 @@ wine_dat %>%
   xlab("Count (Square Root Sclae)") +
   ylab("Variety")
   ggtitle("Variety Count Distribution",
-          subtitle = "Figure 5")
+          subtitle = "Figure 6")
 
 # Variety Price Distribution
 wine_dat %>%
@@ -170,7 +185,7 @@ wine_dat %>%
   ylab("Price") +
   theme(axis.text.x = element_text(angle = 90, hjust =1)) +
   ggtitle("Variety Price Distribution",
-          subtitle = "Figure 6")
+          subtitle = "Figure 7")
 
 # Variety Points Distribution
 wine_dat %>%
@@ -185,7 +200,7 @@ wine_dat %>%
   ylab("Points") +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   ggtitle("Variety Points Distribution",
-          subtitle = "Figure 7")
+          subtitle = "Figure 8")
 
 # Variety Points vs Price
 wine_dat %>%
@@ -198,7 +213,22 @@ wine_dat %>%
   xlab("Average Points") +
   ylab("Average Price") +
   ggtitle("Avg Points and Price by Variety",
-          subtitle = "Figure 8")
+          subtitle = "Figure 9")
+
+# Standard deviation for Variety
+wine_dat %>%
+  group_by(variety) %>%
+  summarize(n = n(), stan_dev = sd(price)) %>%
+  mutate(group = cut(n,
+                     breaks = c(0, mean(n), Inf),
+                     labels = c("< than average", "> than average"))) %>%
+  ggplot(aes(stan_dev, fill = group)) +
+  geom_density(alpha = 0.5) +
+  xlab("Standard Deviation") +
+  ylab("Density") +
+  theme_hc() +
+  ggtitle("Price Standard Deviation by Variety",
+          subtitle = "Figure 10")
 
 # Variety Points Vs Price correlation
 variety_avg <- wine_dat %>%
@@ -222,7 +252,7 @@ wine_dat %>%
   xlab("Count") +
   ylab("Years") +
   ggtitle("Distribution by Year",
-          subtitle = "Figure 9")
+          subtitle = "Figure 11")
 
 # Years Price Distribution
 wine_dat %>%
@@ -236,7 +266,7 @@ wine_dat %>%
   xlab("Years") +
   ylab("Price (Log 10 Scale)") +
   ggtitle("Years Price Distribution",
-          subtitle = "Figure 10")
+          subtitle = "Figure 12")
 
 # Years Points Distribution
 wine_dat %>%
@@ -249,7 +279,7 @@ wine_dat %>%
   xlab("Years") +
   ylab("Points") +
   ggtitle("Years Points Distribution",
-          subtitle = "Figure 11")
+          subtitle = "Figure 13")
 
 # Avg Price to Points by Year
 wine_dat %>%
@@ -262,7 +292,22 @@ wine_dat %>%
   xlab("Average Points") +
   ylab("Average Price") +
   ggtitle("Avg Points and Price by Year",
-          subtitle = "Figure 12")
+          subtitle = "Figure 14")
+
+# Standard Deviation by Year
+wine_dat %>%
+  group_by(years) %>%
+  summarize(n = n(), stan_dev = sd(price)) %>%
+  mutate(group = cut(n,
+                     breaks = c(0, mean(n), Inf),
+                     labels = c("< than average", "> than average"))) %>%
+  ggplot(aes(stan_dev, fill = group)) +
+  geom_density(alpha = 0.5) +
+  xlab("Standard Deviation") +
+  ylab("Density") +
+  theme_hc() +
+  ggtitle("Price Standard Deviation by Years",
+          subtitle = "Figure 15")
 
 # Correlate Price to Point by Year
 years_avg <- wine_dat %>%
@@ -291,7 +336,7 @@ wine_dat %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   theme_hc() +
   ggtitle("Winery Count Distribution",
-          subtitle = "Figure 13")
+          subtitle = "Figure 16")
 
 # Price by Winery Distribution
 wine_dat %>%
@@ -306,7 +351,7 @@ wine_dat %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   theme_hc() +
   ggtitle("Price by Winery Distribution",
-          subtitle = "Figure 14")
+          subtitle = "Figure 17")
 
 # Points by Winery Distribution
 wine_dat %>%
@@ -320,7 +365,7 @@ wine_dat %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   theme_hc() +
   ggtitle("Points by Winery Distribution",
-          subtitle = "Figure 15")
+          subtitle = "Figure 18")
 
 # Avg Points and Price by Winery
 wine_dat %>%
@@ -333,7 +378,23 @@ wine_dat %>%
   xlab("Average Points") +
   ylab("Average Price") +
   ggtitle("Avg Price and Points by Winery",
-          subtitle = "Figure 16")
+          subtitle = "Figure 19")
+
+# Standard Deviation by Winery
+wine_dat %>%
+  group_by(winery) %>%
+  summarize(n = n(), stan_dev = sd(price)) %>%
+  mutate(group = cut(n,
+                     breaks = c(0, mean(n), Inf),
+                     labels = c("< than average", "> than average"))) %>%
+  ggplot(aes(stan_dev, fill = group)) +
+  geom_density(alpha = 0.5) +
+  xlab("Standard Deviation (Sq root scale)") +
+  ylab("Density") +
+  scale_x_sqrt() +
+  theme_hc() +
+  ggtitle("Price Standard Deviation by Winery",
+          subtitle = "Figure 20")
 
 # Avg Points and Price by Winery Correlation
 winery_avg <- wine_dat %>%
@@ -345,20 +406,220 @@ correlate <- bind_rows(correlate,
                                   Correlation = cor(winery_avg$avg_pts, winery_avg$avg_p)))
 correlate
 
+# Points Count Distribution
+wine_dat %>%
+  group_by(points) %>%
+  summarize(n = n()) %>%
+  ggplot(aes(n)) +
+  geom_histogram(bins = 30, color = "black", fill = "blue") +
+  ylab("Count") +
+  theme_hc() +
+  ggtitle("Points Count Distribution",
+          subtitle = "Figure 21")
+
+wine_dat %>%
+  group_by(points) %>%
+  summarize(n = n(), points = points) %>%
+  ggplot(aes(points, n)) +
+  geom_line() +
+  scale_y_log10() +
+  ylab("Count (Log 10 scale)") +
+  xlab("Points") +
+  theme_hc() +
+  ggtitle("Count by Points",
+          subtitle = "Figure 22")
+
+# Standard Deviation by points
+wine_dat %>%
+  group_by(points) %>%
+  summarize(n = n(), stan_dev = sd(price)) %>%
+  mutate(group = cut(n,
+                     breaks = c(0, mean(n), Inf),
+                     labels = c("< than avg", "> than avg"))) %>%
+  ggplot(aes(stan_dev, fill = group)) +
+  geom_density(alpha = 0.5) +
+  xlab("Standard Deviation (Sq root Scale)") +
+  ylab("Density") +
+  theme_hc() +
+  ggtitle("Standard Deviation of Price - Points Group",
+          subtitle = "Figure 23")
+
+# Average Price by points
+wine_dat %>%
+  group_by(points) %>%
+  summarize(avg_p = mean(price), points = points) %>%
+  ggplot(aes(points, avg_p)) +
+  geom_point() +
+  xlab("Points") +
+  ylab("Average Price") +
+  theme_hc() +
+  ggtitle("Average Price by Points",
+          subtitle = "Figure 24")
+
+# Correlation avg price to point
+pts_avg <- wine_dat %>%
+  group_by(points) %>%
+  summarize(avg_pts = mean(points), avg_p = mean(price))
+
+correlate <- bind_rows(correlate, 
+                       data.frame(Category = "Points",
+                                  Correlation = cor(pts_avg$avg_pts, pts_avg$avg_p)))
+correlate
+
 # Partition data into train and test set
 set.seed(111, sample.kind = "Rounding")
 ind <- createDataPartition(wine_dat$price, times = 1, p = 0.1, list = FALSE)
 
 train_dat <- wine_dat[-ind,]
-test_dat <- wine_dat[ind,]
+temp <- wine_dat[ind,]
+
+# Make sure the all the criteria are in both data sets
+test_data <- temp %>%
+  semi_join(train_dat, by = "country") %>%
+  semi_join(train_dat, by = "variety") %>%
+  semi_join(train_dat, by = "years") %>%
+  semi_join(train_dat, by = "winery")
 
 # Baseline
 mu <- mean(train_dat$price)
 
 
-result <- data.frame(Method = "Method",
+result <- data.frame(Method = "Baseline",
                      RMSE = RMSE(mu, test_dat$price))
 
 result
 
+# Country Bias
+b_c <- train_dat %>%
+  group_by(country) %>%
+  summarize(b_c = mean(price - mu))
 
+pred_bc <- test_data %>%
+  left_join(b_c, by = "country") %>%
+  mutate(pred = mu + b_c) %>%
+  .$pred
+
+result <- bind_rows(result, 
+                    data.frame(Method = "Country Bias",
+                               RMSE = RMSE(pred_bc, test_data$price)))
+
+# Variety bias
+b_v <- train_dat %>%
+  group_by(variety) %>%
+  summarize(b_v = mean(price - mu))
+
+pred_bcv <- test_data %>%
+  left_join(b_c, by = "country") %>%
+  left_join(b_v, by = "variety") %>%
+  mutate(pred = mu + b_c + b_v) %>%
+  .$pred
+
+result <- bind_rows(result, 
+                    data.frame(Method = "Country + Variety",
+                               RMSE = RMSE(pred_bcv, test_data$price)))
+
+# Years bias
+b_y <- train_dat %>%
+  group_by(years) %>%
+  summarize(b_y = mean(price - mu))
+
+pred_bcvy <- test_data %>%
+  left_join(b_c, by = "country") %>%
+  left_join(b_v, by = "variety") %>%
+  left_join(b_y, by = "years") %>%
+  mutate(pred = mu + b_c + b_v + b_y) %>%
+  .$pred
+
+
+result <- bind_rows(result, 
+                    data.frame(Method = "Country + Variety + Years",
+                               RMSE = RMSE(pred_bcvy, test_data$price)))
+
+# Winery Bias
+b_w <- train_dat %>%
+  group_by(winery) %>%
+  summarize(b_w = mean(price - mu))
+
+pred_bcvyw <- test_data %>%
+  left_join(b_c, by = "country") %>%
+  left_join(b_v, by = "variety") %>%
+  left_join(b_y, by = "years") %>%
+  left_join(b_w, by = "winery") %>%
+  mutate(pred = mu + b_c + b_v + b_y + b_w) %>%
+  .$pred
+
+result <- bind_rows(result, 
+                    data.frame(Method = "Country + Variety + Years + Winery",
+                               RMSE = RMSE(pred_bcvyw, test_data$price)))
+# Points bias
+b_p <- train_dat %>%
+  group_by(points) %>%
+  summarize(b_p = mean(price - mu))
+
+pred_bcvywp <- test_data %>%
+  left_join(b_c, by = "country") %>%
+  left_join(b_v, by = "variety") %>%
+  left_join(b_y, by = "years") %>%
+  left_join(b_w, by = "winery") %>%
+  left_join(b_p, by = "points") %>%
+  mutate(pred = mu + b_c + b_v + b_y + b_w + b_p) %>%
+  .$pred
+
+result <- bind_rows(result, 
+                    data.frame(Method = "Country + Variety + Years + Winery",
+                               RMSE = RMSE(pred_bcvywp, test_data$price)))
+result
+
+# establish lambda range
+lambdas <- seq(0.25, 10, 0.25)
+
+# regularization function
+regularization_rmse <- sapply(lambdas, function(l){
+  # variety regularization
+  bv_r <- train_dat %>%
+    group_by(variety) %>%
+    summarize(bv_r = sum(price - mu)/(n() + l))
+  # years regularization
+  by_r <- train_dat %>%
+    left_join(bv_r, by = "variety") %>%
+    group_by(years) %>%
+    summarize(by_r = sum(price - bv_r - mu)/(n() + l))
+  # winery regularization
+  bw_r <- train_dat %>%
+    left_join(bv_r, by = "variety") %>%
+    left_join(by_r, by = "years") %>%
+    group_by(winery) %>%
+    summarize(bw_r = sum(price - bv_r - by_r - mu)/(n() + l))
+  # points regularization
+  bp_r <- train_dat %>%
+    left_join(bv_r, by = "variety") %>%
+    left_join(by_r, by = "years") %>%
+    left_join(bw_r, by = "winery") %>%
+    group_by(points) %>%
+    summarize(bp_r = sum(price - bv_r - by_r - bw_r - mu)/(n() + l))
+  # predict algorithm
+  pred_reg <- test_data %>%
+    left_join(bv_r, by = "variety") %>%
+    left_join(by_r, by = "years") %>%
+    left_join(bw_r, by = "winery") %>%
+    left_join(bp_r, by = "points") %>%
+    mutate(pred = mu + bv_r + by_r + bw_r + bp_r) %>%
+    .$pred
+  
+  return(RMSE(pred_reg, test_data$price))
+})
+
+# Graph Lambdas vs RMSE
+data.frame(Lambdas = lambdas, RMSE = regularization_rmse) %>%
+  ggplot(aes(Lambdas, RMSE)) +
+  geom_point() +
+  theme_hc() +
+  ggtitle("Lambda vs RMSE Distribution")
+
+lambda <- lambdas[which.min(regularization_rmse)]
+lambda
+
+result <- bind_rows(result,
+                    data.frame(Method = "Regularization",
+                               RMSE = min(regularization_rmse)))
+result

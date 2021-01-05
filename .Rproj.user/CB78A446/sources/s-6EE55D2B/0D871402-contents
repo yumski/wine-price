@@ -1,0 +1,16 @@
+
+
+wine_dat %>%
+  group_by(points) %>%
+  summarize(n = n(), stan_dev = sd(price)) %>%
+  mutate(group = cut(n,
+                     breaks = c(0, mean(n), Inf),
+                     labels = c("< than avg", "> than avg"))) %>%
+  ggplot(aes(stan_dev, fill = group)) +
+  geom_density(alpha = 0.5) +
+  xlab("Standard Deviation (Sq root Scale)") +
+  ylab("Density") +
+  theme_hc() +
+  ggtitle("Standard Deviation of Price - Points Group",
+          subtitle = "Figure 18")
+  

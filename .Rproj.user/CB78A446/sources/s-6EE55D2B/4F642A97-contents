@@ -1,0 +1,3 @@
+pred_knn <- train(price ~ .,
+                  method = "knn",
+                  data = train_dat)
