@@ -708,6 +708,13 @@ pred_val <- validate_dat %>%
   mutate(pred = mu + bv_r + by_r + bw_r + bp_r) %>%
   .$pred
 
+# Validation results
 validate <- data.frame(Method = "Regularization",
                        RMSE = RMSE(pred_val, validate_dat$price))
+validate
+
+rf_val <- predict(rf_fit, validate_dat[,col_index])
+
+validate <- bind_rows(Method = "RandomForest",
+                      RMSE = RMSE(rf_val, validate_dat$price))
 validate
