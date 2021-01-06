@@ -1,13 +1,16 @@
 if(!require(tidyverse)) install.packages("tidyverse")
 if(!require(caret)) install.packages("caret")
-if(!require(ggplot2)) install.packages(ggplot2)
-if(!require(knitr)) install.packages(knitr)
+if(!require(ggplot2)) install.packages("ggplot2")
+if(!require(knitr)) install.packages("knitr")
+if(!require(ggthemes)) install.packages("ggthemes")
+if(!require(randomForest)) install.packages("randomForest")
 
 library(tidyverse)
 library(caret)
 library(ggplot2)
 library(knitr)
 library(ggthemes)
+library(randomForest)
 
 
 # Download the file and load into R data
@@ -46,9 +49,18 @@ set.seed(123, sample.kind = "Rounding")
 
 ind <- createDataPartition(new_dat$price, times=1, p=0.1, list=FALSE)
 wine_dat <- new_dat[-ind,]
-validate_dat <- new_dat[ind,]
 
+temp_file <- new_dat[ind,]
 
+# Make sure all the features are in both data.
+validate_dat <- temp_file %>%
+  semi_join(wine_dat, by = "country") %>%
+  semi_join(wine_dat, by = "price") %>%
+  semi_join(wine_dat, by = "variety") %>%
+  semi_join(wine_dat, by = "years") %>%
+  semi_join(wine_dat, by = "winery")
+
+rm(temp_file)
 dim(wine_dat)
 
 # RMSE Function
@@ -168,7 +180,7 @@ wine_dat %>%
   scale_x_sqrt() +
   theme_hc() +
   xlab("Count (Square Root Sclae)") +
-  ylab("Variety")
+  ylab("Variety") +
   ggtitle("Variety Count Distribution",
           subtitle = "Figure 6")
 
@@ -330,10 +342,8 @@ wine_dat %>%
   filter(n > 100) %>%
   ggplot(aes(n, winery)) +
   geom_point() +
-  theme_hc() +
   xlab("Winery") +
-  ylab("Price (Log 10 Scale)") +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  ylab("Count") +
   theme_hc() +
   ggtitle("Winery Count Distribution",
           subtitle = "Figure 16")
@@ -411,7 +421,7 @@ wine_dat %>%
   group_by(points) %>%
   summarize(n = n()) %>%
   ggplot(aes(n)) +
-  geom_histogram(bins = 30, color = "black", fill = "blue") +
+  geom_histogram(bins = 30, color = "black", fill = "grey") +
   ylab("Count") +
   theme_hc() +
   ggtitle("Points Count Distribution",
@@ -485,7 +495,7 @@ mu <- mean(train_dat$price)
 
 
 result <- data.frame(Method = "Baseline",
-                     RMSE = RMSE(mu, test_dat$price))
+                     RMSE = RMSE(mu, test_data$price))
 
 result
 
@@ -623,3 +633,81 @@ result <- bind_rows(result,
                     data.frame(Method = "Regularization",
                                RMSE = min(regularization_rmse)))
 result
+
+
+# Set column index for model
+col_index <- c("points", "winery", "variety", "years", "country")
+
+# set cross validation and RF tuning parameter
+control <- trainControl(method = "cv", number = 5)
+grid <- data.frame(mtry = c(1,5,10,25,50,100))
+
+# create smaller sample of data
+n = 10000
+
+index <- sample(train_dat$price, n)
+
+train_small <- train_dat[index,]
+
+# randomforest training
+train_rf <- train(train_small[,col_index], train_small$price,
+                method = "rf",
+                trControl = control,
+                tuneGrid = grid)
+
+ggplot(train_rf) +
+  theme_hc() +
+  ggtitle("Random Forest Train")
+
+
+train_rf$bestTune
+
+imp <- varImp(train_rf)
+imp
+
+# randomforest fit
+rf_fit <- randomForest(train_small[,col_index], train_small$price,
+                       minNode = train_rf$bestTune$mtry)
+
+plot(rf_fit)
+
+# predict the test set price
+pred_rf <- predict(rf_fit, test_data[,col_index])
+
+result <- bind_rows(result, data.frame(Method = "Random Forest",
+                                       RMSE = RMSE(pred_rf, test_data$price)))
+result
+
+bv_r <- wine_dat %>%
+  group_by(variety) %>%
+  summarize(bv_r = sum(price - mu)/(n() + lambda))
+# years regularization
+by_r <- wine_dat %>%
+  left_join(bv_r, by = "variety") %>%
+  group_by(years) %>%
+  summarize(by_r = sum(price - bv_r - mu)/(n() + lambda))
+# winery regularization
+bw_r <- wine_dat %>%
+  left_join(bv_r, by = "variety") %>%
+  left_join(by_r, by = "years") %>%
+  group_by(winery) %>%
+  summarize(bw_r = sum(price - bv_r - by_r - mu)/(n() + lambda))
+# points regularization
+bp_r <- wine_dat %>%
+  left_join(bv_r, by = "variety") %>%
+  left_join(by_r, by = "years") %>%
+  left_join(bw_r, by = "winery") %>%
+  group_by(points) %>%
+  summarize(bp_r = sum(price - bv_r - by_r - bw_r - mu)/(n() + lambda))
+# predict algorithm
+pred_val <- validate_dat %>%
+  left_join(bv_r, by = "variety") %>%
+  left_join(by_r, by = "years") %>%
+  left_join(bw_r, by = "winery") %>%
+  left_join(bp_r, by = "points") %>%
+  mutate(pred = mu + bv_r + by_r + bw_r + bp_r) %>%
+  .$pred
+
+validate <- data.frame(Method = "Regularization",
+                       RMSE = RMSE(pred_val, validate_dat$price))
+validate
